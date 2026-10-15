@@ -27,7 +27,9 @@ class Assets {
 
 		wp_enqueue_script(
 			'pglm_frontend',
-			PGLM_PLUGIN_URL . 'assets/js/frontend' . $this->suffix() . '.js',
+			// secondtry.se: LiteSpeed "Remove Query Strings" strips ?ver= from local
+			// scripts; _litespeed_rm_qs=0 keeps it so a new version gets a new URL.
+			PGLM_PLUGIN_URL . 'assets/js/frontend' . $this->suffix() . '.js?_litespeed_rm_qs=0',
 			[ 'jquery' ],
 			PGLM_PLUGIN_VERSION,
 			true

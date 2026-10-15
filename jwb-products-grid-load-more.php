@@ -3,7 +3,7 @@
  * Plugin Name: JetWooBuilder - Products Grid Load More
  * Plugin URI: https://github.com/UraraReika/jwb-products-grid-load-more
  * Description: Add ajax load more functionality to JetWooBuilder Products Grid widget.
- * Version:     1.2.0
+ * Version:     1.2.0-secondtry.1
  * Author:      Crocoblock
  * Author URI:  https://crocoblock.com/
  * Text Domain: jet-woo-builder
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-define( 'PGLM_PLUGIN_VERSION', '1.2.0' );
+define( 'PGLM_PLUGIN_VERSION', '1.2.0-secondtry.1' );
 
 define( 'PGLM_PLUGIN_FILE', __FILE__ );
 define( 'PGLM_PLUGIN_PATH', plugin_dir_path( PGLM_PLUGIN_FILE ) );
