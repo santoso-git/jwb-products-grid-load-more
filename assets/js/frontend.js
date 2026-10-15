@@ -42,10 +42,6 @@
 								return;
 							}
 
-							$( 'html, body' ).animate( {
-								scrollTop: $productsWrapper.outerHeight() + $productsWrapper.offset().top
-							}, 1000 );
-
 							clickData.page++;
 
 							JetWooBuilderPGLM.ajaxRequest( $productsWrapper, clickData, triggerID );
@@ -104,11 +100,24 @@
 			}
 
 			const shimmer = JetWooBuilderPGLM.getShimmerMarkup();
+			const $container = $wrapper.parent();
+			const firstNewIndex = $wrapper.find( '.jet-woo-products__item' ).length;
 
 			if ( currentPage < data.page ){
 				for ( let i = 0; i < data.settings.columns; i++ ) {
 					$wrapper.append( shimmer );
 				}
+			}
+
+			// Button click: bring the first new product to just below any fixed header.
+			// Scroll anchoring is paused so the browser does not pin the button in
+			// place when the grid grows or is replaced.
+			const root = document.documentElement;
+			const previousAnchor = root.style.overflowAnchor;
+
+			if ( triggerID ) {
+				root.style.overflowAnchor = 'none';
+				JetWooBuilderPGLM.scrollToItem( $container, firstNewIndex );
 			}
 
 			scrollable = false;
@@ -146,12 +155,71 @@
 			} ).done( function( response ) {
 				const $html = $( response.data.html );
 
-				$wrapper.parent().html( $html );
+				$container.html( $html );
 				scrollable = true;
 
+				// The grid was replaced; correct the position for the real products.
+				if ( triggerID ) {
+					JetWooBuilderPGLM.scrollToItem( $container, firstNewIndex );
+				}
+
 				$( document ).trigger('jet-load-more-content-rendered', [ $html ] );
+			} ).always( function() {
+				if ( triggerID ) {
+					setTimeout( function() {
+						root.style.overflowAnchor = previousAnchor;
+					}, 1000 );
+				}
 			} );
 
+		},
+
+		scrollToItem: function( $container, index ) {
+			const $item = $container.find( '.jet-woo-products__item' ).eq( index );
+
+			if ( ! $item.length ) {
+				return;
+			}
+
+			const gap = 16;
+			const top = $item.offset().top - JetWooBuilderPGLM.getTopOffset() - gap;
+			const reduceMotion = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+
+			window.scrollTo( {
+				top: Math.max( 0, top ),
+				behavior: reduceMotion ? 'auto' : 'smooth'
+			} );
+		},
+
+		// Height covered by fixed or sticky bars at the top of the viewport
+		// (admin bar, sticky header), stacked on top of each other.
+		getTopOffset: function() {
+			let offset = 0;
+
+			for ( let i = 0; i < 5; i++ ) {
+				let el = document.elementFromPoint( window.innerWidth / 2, offset + 1 );
+				let bottom = 0;
+
+				while ( el && el !== document.body && el !== document.documentElement ) {
+					const position = window.getComputedStyle( el ).position;
+
+					if ( 'fixed' === position || 'sticky' === position ) {
+						bottom = el.getBoundingClientRect().bottom;
+						break;
+					}
+
+					el = el.parentElement;
+				}
+
+				if ( bottom <= offset ) {
+					break;
+				}
+
+				offset = bottom;
+			}
+
+			// A fixed element covering most of the screen is an overlay, not a header.
+			return offset > window.innerHeight / 2 ? 0 : offset;
 		},
 
 		hideTriggerButton: function ( $button, page, pages ) {
