@@ -4,6 +4,8 @@
 
 	let currentPage = 1;
 	let scrollable = true;
+	let anchorTimer = null;
+	let anchorOriginal = null;
 
 	let JetWooBuilderPGLM = {
 		init: function () {
@@ -34,6 +36,12 @@
 
 						$( document ).on( 'click.JetWooBuilderInfinityScroll', triggerID, function ( event ) {
 							event.preventDefault();
+
+							// One request at a time: a second click while loading would
+							// double the placeholders and scroll to the wrong row.
+							if ( ! scrollable ) {
+								return;
+							}
 
 							const $productsWrapper = $scope.find( '.jet-woo-products' );
 							const clickData = $productsWrapper.data( 'load-more' );
@@ -113,9 +121,14 @@
 			// Scroll anchoring is paused so the browser does not pin the button in
 			// place when the grid grows or is replaced.
 			const root = document.documentElement;
-			const previousAnchor = root.style.overflowAnchor;
 
 			if ( triggerID ) {
+				clearTimeout( anchorTimer );
+
+				if ( null === anchorOriginal ) {
+					anchorOriginal = root.style.overflowAnchor;
+				}
+
 				root.style.overflowAnchor = 'none';
 				JetWooBuilderPGLM.scrollToItem( $container, firstNewIndex );
 			}
@@ -165,9 +178,12 @@
 
 				$( document ).trigger('jet-load-more-content-rendered', [ $html ] );
 			} ).always( function() {
+				scrollable = true;
+
 				if ( triggerID ) {
-					setTimeout( function() {
-						root.style.overflowAnchor = previousAnchor;
+					anchorTimer = setTimeout( function() {
+						root.style.overflowAnchor = anchorOriginal;
+						anchorOriginal = null;
 					}, 1000 );
 				}
 			} );
@@ -185,10 +201,17 @@
 			const top = $item.offset().top - JetWooBuilderPGLM.getTopOffset() - gap;
 			const reduceMotion = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 
-			window.scrollTo( {
-				top: Math.max( 0, top ),
-				behavior: reduceMotion ? 'auto' : 'smooth'
-			} );
+			const target = Math.max( 0, top );
+
+			try {
+				window.scrollTo( {
+					top: target,
+					behavior: reduceMotion ? 'auto' : 'smooth'
+				} );
+			} catch ( e ) {
+				// Browsers without ScrollToOptions (Safari before 14).
+				window.scrollTo( 0, target );
+			}
 		},
 
 		// Height covered by fixed or sticky bars at the top of the viewport
